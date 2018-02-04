@@ -5,7 +5,6 @@ import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Properties;
 
 import javax.imageio.ImageIO;
@@ -51,7 +50,9 @@ public class Main {
 	public static class VisionData {
 		public Mat outputImg = new Mat();
 		public double fps;
-		public HashMap<String, String> data = new HashMap<String, String>();
+		public double ctrX;
+		public double ctrY;
+		public double numTargetsFound;
 
 		/**
 		 * This method converts the vision data into a nice and tidy string :]
@@ -59,9 +60,11 @@ public class Main {
 		 * @return the data
 		 */
 		public void encode(NetworkTable table) {
-			// TODO: add code
-			// basic networktable code: table.getEntry("data").setString("foo);
-			table.getEntry("data").setString(DataUtils.encodeData(data));
+			// basic networktable code: table.getEntry("data").forceSetString("foo);
+			table.getEntry("fps").forceSetDouble(fps);
+			table.getEntry("ctrX").forceSetDouble(ctrX);
+			table.getEntry("ctrY").forceSetDouble(ctrY);
+			table.getEntry("numTargetsFound").forceSetDouble(numTargetsFound);
 		}
 
 		/**
@@ -71,16 +74,26 @@ public class Main {
 		 *            data table
 		 * @return the data
 		 */
-		@SuppressWarnings("unused")
 		public static VisionData decode(NetworkTable table) {
-			// TODO: add code
-			// basic networktable code:
-			// table.getEntry("data").getValue().getString();
+			// basic networktable code: table.getEntry("data").getValue().getString();
 			// dont forget: if(table.getEntry("data").getValue().isString())
-			if (table.getEntry("data").getValue().isString()) {
-				HashMap<String, String> data = DataUtils.decodeData(table.getEntry("data").getValue().getString());
+			try{
+				VisionData data = new VisionData();
+				data.fps = table.getEntry("fps").getValue().getDouble();
+				data.ctrX = table.getEntry("crtX").getValue().getDouble();
+				data.ctrY = table.getEntry("ctrY").getValue().getDouble();
+				data.numTargetsFound = table.getEntry("numTargetsFound").getValue().getDouble();
+				return data;
+			}catch(Exception e){
+				e.printStackTrace();
+				VisionData tempData = new VisionData();
+				tempData.fps = 0;
+				tempData.ctrX = 0;
+				tempData.ctrY = 0;
+				tempData.numTargetsFound = 0;
+				return tempData;
 			}
-			return null;
+			
 		}
 	}
 
