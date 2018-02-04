@@ -11,6 +11,9 @@ public class ExampleServer {
 	public static NetworkTable vision;
 
 	public static void main(String[] args) {
+		// Must be included!
+		System.loadLibrary("opencv_java310");
+		
 		// Inits stuff
 		NetworkTableInstance instance = NetworkTableInstance.getDefault();
 		instance.setUpdateRate(0.02);

@@ -77,9 +77,15 @@ public class Main {
 			// dont forget: if(table.getEntry("data").getValue().isString())
 			try{
 				VisionData data = new VisionData();
-				data.fps = table.getEntry("fps").getValue().getDouble();
-				data.ctrX = table.getEntry("crtX").getValue().getDouble();
-				data.numTargetsFound = table.getEntry("numTargetsFound").getValue().getDouble();
+				if(table.getEntry("fps").getValue().isDouble()){
+					data.fps = table.getEntry("fps").getValue().getDouble();
+				}
+				if(table.getEntry("ctrX").getValue().isDouble()){
+					data.ctrX = table.getEntry("crtX").getValue().getDouble();
+				}
+				if(table.getEntry("numTargetsFound").getValue().isDouble()){
+					data.numTargetsFound = table.getEntry("numTargetsFound").getValue().getDouble();
+				}
 				return data;
 			}catch(Exception e){
 				e.printStackTrace();
@@ -231,7 +237,6 @@ public class Main {
 					
 					//Sends the data
 					visionData.encode(data);
-					fps.getEntry("fps").setDouble(visionData.fps);
 					
 					// display the processed frame in the GUI
 					if (use_GUI) {
