@@ -25,7 +25,6 @@ public class ExampleServer {
 				System.out.println();
 				System.out.println();
 				System.out.println("ctrX: "+visionData.ctrX);
-				System.out.println("ctrY: "+visionData.ctrY);
 				System.out.println("numTargetsFound: "+visionData.numTargetsFound);
 				System.out.println("fps: "+visionData.fps);
 				try {

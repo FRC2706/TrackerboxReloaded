@@ -51,7 +51,6 @@ public class Main {
 		public Mat outputImg = new Mat();
 		public double fps;
 		public double ctrX;
-		public double ctrY;
 		public double numTargetsFound;
 
 		/**
@@ -63,7 +62,6 @@ public class Main {
 			// basic networktable code: table.getEntry("data").forceSetString("foo);
 			table.getEntry("fps").forceSetDouble(fps);
 			table.getEntry("ctrX").forceSetDouble(ctrX);
-			table.getEntry("ctrY").forceSetDouble(ctrY);
 			table.getEntry("numTargetsFound").forceSetDouble(numTargetsFound);
 		}
 
@@ -81,7 +79,6 @@ public class Main {
 				VisionData data = new VisionData();
 				data.fps = table.getEntry("fps").getValue().getDouble();
 				data.ctrX = table.getEntry("crtX").getValue().getDouble();
-				data.ctrY = table.getEntry("ctrY").getValue().getDouble();
 				data.numTargetsFound = table.getEntry("numTargetsFound").getValue().getDouble();
 				return data;
 			}catch(Exception e){
@@ -89,7 +86,6 @@ public class Main {
 				VisionData tempData = new VisionData();
 				tempData.fps = 0;
 				tempData.ctrX = 0;
-				tempData.ctrY = 0;
 				tempData.numTargetsFound = 0;
 				return tempData;
 			}
