@@ -27,6 +27,7 @@ import edu.wpi.first.wpilibj.networktables.NetworkTable;
 public class Main {
 
 	public static NetworkTable visionTable;
+	static boolean use_GUI;
 
 	/**
 	 * A class to hold calibration parameters for the image processing algorithm
@@ -218,7 +219,7 @@ public class Main {
 
 		DisplayGui guiRawImg = null;
 		DisplayGui guiProcessedImg = null;
-		boolean use_GUI = false;
+		use_GUI = false;
 		if (System.getProperty("os.name").toLowerCase().indexOf("windows") != -1) {
 			use_GUI = true;
 		}
