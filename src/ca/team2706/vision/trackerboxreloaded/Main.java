@@ -16,7 +16,9 @@ import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfByte;
 import org.opencv.core.Rect;
+import org.opencv.core.Size;
 import org.opencv.imgcodecs.Imgcodecs;
+import org.opencv.imgproc.Imgproc;
 import org.opencv.videoio.VideoCapture;
 
 import edu.wpi.first.wpilibj.networktables.NetworkTable;
@@ -220,6 +222,8 @@ public class Main {
 		if (System.getProperty("os.name").toLowerCase().indexOf("windows") != -1) {
 			use_GUI = true;
 		}
+		Size sz = new Size(320,240);
+		Imgproc.resize( frame, frame, sz );
 		// Set up the GUI display windows
 		if (use_GUI) {
 			try {
@@ -240,7 +244,7 @@ public class Main {
 					continue;
 				}
 			} // else use the image from disk that we loaded above
-
+			Imgproc.resize( frame, frame, sz );
 			// Process the frame!
 			long pipelineStart = System.nanoTime();
 			VisionData visionData = Pipeline.process(frame, visionParams);
