@@ -61,12 +61,12 @@ public class Main {
 	 * This is the number of seconds between dumping images to a usb stick, this
 	 * is taken from the vision parameters
 	 **/
-	public static int seconds_between_img_dumps;
+	public static double seconds_between_img_dumps;
 	/**
 	 * This is the current number of seconds, this resets every time it is over
 	 * the seconds_between_img_dumps
 	 **/
-	public static long current_time_seconds;
+	public static double current_time_seconds;
 	/** The directory that images are dumped to **/
 	public static String outputPath;
 
@@ -231,7 +231,7 @@ public class Main {
 			outputPath = properties.getProperty("imgDumpPath");
 			// Sets the seconds between image dumps to the seconds between image
 			// dumps in the properties file
-			seconds_between_img_dumps = Integer.valueOf(properties.getProperty("imgDumpWait"));
+			seconds_between_img_dumps = Double.valueOf(properties.getProperty("imgDumpWait"));
 			// Sets the image file path to the image file path in the properties
 			// file, this is only used if the selected camera is -1
 			visionParams.imageFile = properties.getProperty("imageFile");
@@ -406,11 +406,15 @@ public class Main {
  * @throws IOException
  */
 
-	public static void imgDump(BufferedImage image, String suffix, int timestamp) throws IOException {
+	public static void imgDump(BufferedImage image, String suffix) throws IOException {
 		// prepend the file name with the tamestamp integer, left-padded with
 		// zeros so it sorts properly
-		File output = new File(outputPath + String.format("%05d", timestamp) + "_" + suffix + ".png");
+		File output = new File(outputPath + String.format("%05d",timestamp) + "_" + suffix + ".png");
 		try {
+			if(output.exists()){
+				timestamp++;
+				imgDump(image, suffix);
+			}
 			ImageIO.write(image, "PNG", output);
 		} catch (IOException e) {
 			throw new IOException(e.getMessage());
@@ -590,12 +594,12 @@ public class Main {
 			}
 			if(useCamera){
 			// log images to file once every seconds_between_img_dumps
-			long elapsedTime = (System.currentTimeMillis() / 1000) - current_time_seconds;
+			double elapsedTime = ( (double) System.currentTimeMillis() / 1000) - current_time_seconds;
 			// If the elapsed time is more that the seconds between image dumps
 			// then dump images asynchronously
 			if (elapsedTime >= seconds_between_img_dumps) {
 				// Sets the current number of seconds
-				current_time_seconds = (System.currentTimeMillis() / 1000);
+				current_time_seconds = (((double) System.currentTimeMillis()) / 1000);
 				// Clones the frame
 				Mat finalFrame = frame.clone();
 				// Starts a new thread to dump images
@@ -603,13 +607,13 @@ public class Main {
 					public void run() {
 						try {
 							// Dumps the raw image
-							imgDump(matToBufferedImage(finalFrame), "raw",timestamp);
+							imgDump(matToBufferedImage(finalFrame), "raw");
 							// Dumps the binMask image
-							imgDump(matToBufferedImage(visionData.binMask), "binMask",timestamp);
+							imgDump(matToBufferedImage(visionData.binMask), "binMask");
 							// Draw the target to the output image
 							Pipeline.drawPreferredTarget(finalFrame, visionData);
 							// Dumps the output image
-							imgDump(matToBufferedImage(finalFrame), "output",timestamp);
+							imgDump(matToBufferedImage(finalFrame), "output");
 							timestamp++;
 						} catch (IOException e) {
 							e.printStackTrace();
