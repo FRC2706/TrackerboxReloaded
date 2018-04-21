@@ -245,8 +245,20 @@ public class Main {
 			// if the file, take the timestamp from there
 			if (timestampfile.exists()) {
 				Scanner s = new Scanner(timestampfile);
-				timestamp = Integer.valueOf(s.nextLine()).intValue();
-				incrementTimestamp();
+				try {
+					timestamp = Integer.valueOf(s.nextLine()).intValue();
+				}
+				catch (java.util.NoSuchElementException e) {
+					e.printStackTrace();
+					timestamp=0;
+				}
+
+				try {
+					incrementTimestamp();
+				}
+				catch (IOException e) {
+					e.printStackTrace();
+				}
 				s.close();
 			}
 
@@ -282,7 +294,7 @@ public class Main {
 
 	/**
 	 * Saves the vision parameters to a file
-	 * 
+	 *
 	 **/
 	public static void saveVisionParams() {
 		// Initilizes the properties object
@@ -384,7 +396,7 @@ public class Main {
 
 	/**
 	 * Converts a Buffered Image to a OpenCV Matrix
-	 * 
+	 *
 	 * @param Buffered
 	 *            Image to convert to matrix
 	 * @return The matrix from the buffered image
@@ -398,7 +410,7 @@ public class Main {
 	}
 
 	/**
-	 * 
+	 *
 	 * @param The
 	 *            image to dump to a file
 	 * @param image
@@ -412,40 +424,25 @@ public class Main {
 		// prepend the file name with the time stamp integer, left-padded with
 		// zeros so it sorts properly
 		File output = new File(outputPath + String.format("%05d", timestamp) + "_" + suffix + ".png");
-//		boolean recurse = false;
-//		try {
-//			if (output.exists()) {
-//				incrementTimestamp();
-//				recurse = true;
-//				imgDump(image, suffix);
-//			} else {
-//				ImageIO.write(image, "PNG", output);
-//			}
-//		} catch (IOException e) {
-//			throw new IOException(e.getMessage());
-//		}
-//		if (!recurse) {
-//			incrementTimestamp();
-//		}
-		
 		if (output.exists()) {
 			output.delete();
 		}
 		ImageIO.write(image, "PNG", output);
 	}
+
 	private static void incrementTimestamp() throws IOException{
 		timestampfile.delete();
 		timestampfile.createNewFile();
 		PrintWriter out = new PrintWriter(timestampfile);
 		out.println(timestamp);
 		out.close();
-		incrementTimestamp();
+		timestamp++;
 	}
 
 	/**
 	 * The main method! Very important Do not delete! :] :]
 	 *
-	 * 
+	 *
 	 * @param The
 	 *            command line arguments
 	 */
@@ -624,7 +621,7 @@ public class Main {
 						public void run() {
 							try {
 								incrementTimestamp();
-								
+
 								// Dumps the raw image
 								imgDump(matToBufferedImage(finalFrame), "raw");
 								// Dumps the binMask image
