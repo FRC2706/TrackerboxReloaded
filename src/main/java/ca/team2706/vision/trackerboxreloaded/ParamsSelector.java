@@ -6,21 +6,17 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
 import java.io.File;
 import java.io.FileInputStream;
 import java.util.Properties;
 
-public class ParamsSelector extends JFrame implements Runnable, ActionListener, KeyListener {
-
+public class ParamsSelector extends JFrame implements Runnable,ActionListener{
+	
 	private static final long serialVersionUID = 1L;
 	
 	public boolean stop = false;
 	
 	private JButton btnOpenImage;
-	private File f = null;
-	private int index = 0;
 	public boolean b = true;
 	/**
 	 * The content panel
@@ -261,7 +257,7 @@ public class ParamsSelector extends JFrame implements Runnable, ActionListener, 
 		contentPane.add(sMaxVal);
 		
 		//Init the camera select text field
-		textField = new JTextField(String.valueOf(Main.visionParams.cameraSelect));
+		textField = new JTextField(String.valueOf(Main.visionParams.sourceID));
 		//Set the size
 		textField.setBounds(115, 32, 86, 20);
 		//Add it to the window
@@ -562,8 +558,6 @@ public class ParamsSelector extends JFrame implements Runnable, ActionListener, 
 		btnOpenImage.addActionListener(this);
 		contentPane.add(btnOpenImage);
 		
-		this.addKeyListener(this);
-		
 		//Makes the window visible
 		setVisible(show);
 		
@@ -584,7 +578,7 @@ public class ParamsSelector extends JFrame implements Runnable, ActionListener, 
 				//If the camera number is a number
 				if(isInt(textField.getText())){
 					//Update the camera number
-					Main.visionParams.cameraSelect = Integer.valueOf(Integer.valueOf(textField.getText()));
+					Main.visionParams.sourceID = ((textField.getText()));
 				}
 				//If the erode dilate iterations is a number
 				if(isInt(textField_1.getText())){
@@ -663,26 +657,6 @@ public class ParamsSelector extends JFrame implements Runnable, ActionListener, 
 			//Save vision parameters
 			Main.saveVisionParams();
 		}
-		if(arg0.getSource() == btnOpenImage){
-			JFileChooser chooser = new JFileChooser();
-			if(f != null){
-				chooser.setCurrentDirectory(f.getParentFile());
-			}
-			chooser.showOpenDialog(contentPane);
-			if(chooser.getSelectedFile() != null){
-				f = chooser.getSelectedFile();
-				Main.filename = f.getName();
-				Main.useCamera = false;
-				Main.visionParams.imageFile= f.getAbsolutePath();
-				for(int i = 0; i < f.getParentFile().listFiles().length;i++) {
-					String path = f.getParentFile().listFiles()[i].getAbsolutePath();
-					if(path.equals(f.getAbsolutePath())) {
-						index = i;
-						break;
-					}
-				}
-			}
-		}
 	}
 	/**
 	 * Checks if a string is a valid integer
@@ -715,37 +689,5 @@ public class ParamsSelector extends JFrame implements Runnable, ActionListener, 
 			//Fail
 			return false;
 		}
-	}
-
-	@Override
-	public void keyPressed(KeyEvent key) {
-		System.out.println(key.getKeyCode());
-		if(key.getKeyCode() == KeyEvent.VK_LEFT) {
-			if(f != null && index != f.getParentFile().listFiles().length) {
-				index++;
-				f = f.getParentFile().listFiles()[index];
-				Main.filename = f.getName();
-				Main.useCamera = false;
-				Main.visionParams.imageFile= f.getAbsolutePath();
-			}
-		}else if(key.getKeyCode() == KeyEvent.VK_RIGHT) {
-			if(f != null && index != 0) {
-				index--;
-				f = f.getParentFile().listFiles()[index];
-				Main.filename = f.getName();
-				Main.useCamera = false;
-				Main.visionParams.imageFile= f.getAbsolutePath();
-			}
-		}
-	}
-
-	@Override
-	public void keyReleased(KeyEvent arg0) {
-		
-	}
-
-	@Override
-	public void keyTyped(KeyEvent arg0) {
-		
 	}
 }

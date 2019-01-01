@@ -25,11 +25,11 @@ import org.opencv.core.MatOfByte;
 import org.opencv.core.Rect;
 import org.opencv.core.Size;
 import org.opencv.imgcodecs.Imgcodecs;
-import org.opencv.imgproc.Imgproc;
-import org.opencv.videoio.VideoCapture;
-import org.opencv.videoio.VideoWriter;
-import org.opencv.videoio.Videoio;
 
+import ca.team2706.vision.trackerboxreloaded.source.CameraSource;
+import ca.team2706.vision.trackerboxreloaded.source.IPCameraSource;
+import ca.team2706.vision.trackerboxreloaded.source.ImageSource;
+import ca.team2706.vision.trackerboxreloaded.source.USBCameraCVSource;
 import edu.wpi.first.wpilibj.networktables.NetworkTable;
 
 public class Main {
@@ -39,16 +39,11 @@ public class Main {
 	public static int timestamp = 0;
 	public static File timestampfile;
 	public static BufferedImage currentImage;
-	public static VideoCapture camera;
 	public static VisionData lastData;
 	public static boolean process = true;
 	public static boolean showMiddle = false;
 	public static boolean useCamera = true;
-	public static Mat frame;
 
-	public static void setFrame(Mat f) {
-		frame = f;
-	}
 
 	// Camera Type (set in visionParams.properties)
 	// Set to 1 for USB camera, set to 0 for webcam, I think 0 is USB if
@@ -78,47 +73,48 @@ public class Main {
 	 */
 	public static class VisionParams {
 		/** This is the minimum hue that the pipeline will recognize **/
-		int minHue;
+		public int minHue;
 		/** This is the maximum hue that the pipeline will recognize **/
-		int maxHue;
+		public int maxHue;
 		/** This is the minimum saturation that the pipeline will recognize **/
-		int minSaturation;
+		public int minSaturation;
 		/** This is the maximum saturation that the pipeline will recognize **/
-		int maxSaturation;
+		public int maxSaturation;
 		/** This is the minimum value that the pipeline will recognize **/
-		int minValue;
+		public int minValue;
 		/** This is the maximum value that the pipeline will recognize **/
-		int maxValue;
+		public int maxValue;
 		/**
 		 * This is how many times the pipeline will erode dilate the camera
 		 * image
 		 **/
-		int erodeDilateIterations;
+		public int erodeDilateIterations;
 		/** This is the id of the camera that will be used to get images **/
-		int cameraSelect;
+		public String sourceID;
 		/**
 		 * The threshold to detect one large cube as 2 cubes, this is a value
 		 * between 0 and 1
 		 **/
-		double aspectRatioThresh;
+		public double aspectRatioThresh;
 		/** The minimum area that a target can have and still be recognized **/
-		double minArea;
+		public double minArea;
 		/**
 		 * How important it is for a target to be close to the center of the
 		 * image, this will change depending on how well we can turn
 		 **/
-		double distToCentreImportance;
+		public double distToCentreImportance;
 		/** The width to resize the image from the camera to **/
-		int width;
+		public int width;
 		/** The height to resize the image from the camera to **/
-		int height;
+		public int height;
 		/**
 		 * The size to resize the image from the camera to, this is just the
 		 * width and the height values
 		 **/
-		Size sz;
-		/** This is the image to be processed if the selected camera is -1 **/
-		String imageFile;
+		public Size sz;
+		
+		public String cameraSource;
+		
 	}
 
 	/**
@@ -200,7 +196,7 @@ public class Main {
 			properties.load(in);
 			// Sets the selected camera to the selected camera in the properties
 			// file
-			visionParams.cameraSelect = Integer.valueOf(properties.getProperty("CameraSelect"));
+			visionParams.sourceID = (properties.getProperty("sourceID"));
 			// Sets the minimum hue to the minimum hue in the properties file
 			visionParams.minHue = Integer.valueOf(properties.getProperty("minHue"));
 			// Sets the maximum hue to the maximum hue in the properties file
@@ -237,7 +233,7 @@ public class Main {
 			seconds_between_img_dumps = Double.valueOf(properties.getProperty("imgDumpWait"));
 			// Sets the image file path to the image file path in the properties
 			// file, this is only used if the selected camera is -1
-			visionParams.imageFile = properties.getProperty("imageFile");
+			visionParams.cameraSource = properties.getProperty("cameraSource");
 			if (outputPath.endsWith("/") || outputPath.endsWith("\\")) {
 				timestampfile = new File(outputPath + "time.stamp");
 			} else {
@@ -295,7 +291,7 @@ public class Main {
 		try {
 			// Sets the camera select property in the file to the camera select
 			// value
-			properties.setProperty("CameraSelect", String.valueOf(visionParams.cameraSelect));
+			properties.setProperty("cameraSource", String.valueOf(visionParams.cameraSource));
 			// Sets the minimum hue property in the file to the minimum hue
 			// value
 			properties.setProperty("minHue", String.valueOf(visionParams.minHue));
@@ -327,7 +323,7 @@ public class Main {
 			// the distance to center importance value
 			properties.setProperty("distToCentreImportance", String.valueOf(visionParams.distToCentreImportance));
 			// Sets the image file property in the file to the image file value
-			properties.setProperty("imageFile", visionParams.imageFile);
+			properties.setProperty("sourceID", visionParams.sourceID);
 			// Sets the resolution property in the file to the resolution value
 			properties.setProperty("resolution", visionParams.width + "x" + visionParams.height);
 			// Sets the image dumping interval property in the file to the image
@@ -458,48 +454,6 @@ public class Main {
 		} catch (IOException e2) {
 			e2.printStackTrace();
 		}
-		// Initilizes a Matrix to hold the frame
-
-		frame = new Mat();
-
-		// Open a connection to the camera
-		VideoCapture camera = null;
-
-		// Whether to use a camera, or load an image file from disk.
-		if (visionParams.cameraSelect == -1) {
-			useCamera = false;
-		}
-
-		if (useCamera) {
-			// Initilizes the camera
-			camera = new VideoCapture(visionParams.cameraSelect);
-
-			// Sets camera parameters
-			int fourcc = VideoWriter.fourcc('M', 'J', 'P', 'G');
-			camera.set(Videoio.CAP_PROP_FOURCC, fourcc);
-			camera.set(Videoio.CAP_PROP_FRAME_WIDTH, visionParams.width);
-			camera.set(Videoio.CAP_PROP_FRAME_HEIGHT, visionParams.height);
-
-			camera.read(frame);
-
-			if (!camera.isOpened()) {
-				// If the camera didn't open throw an error
-				System.err.println("Error: Can not connect to camera");
-				// Exit
-				System.exit(1);
-			}
-
-			// Set up the camera feed
-			camera.read(frame);
-		} else {
-			// load the image from file.
-			try {
-				frame = bufferedImageToMat(ImageIO.read(new File(visionParams.imageFile)));
-			} catch (IOException e) {
-				e.printStackTrace();
-				frame = new Mat();
-			}
-		}
 		// The window to display the raw image
 		DisplayGui guiRawImg = null;
 		// The window to display the processed image
@@ -512,10 +466,19 @@ public class Main {
 		}
 		// Set the vision parameters size
 		visionParams.sz = new Size(visionParams.width, visionParams.height);
-		if (use_GUI) {
-			// Resizes the frame to the vision parameters size
-			Imgproc.resize(frame, frame, visionParams.sz);
+		
+		CameraSource source;
+		
+		if(visionParams.cameraSource.equalsIgnoreCase("usb")) {
+			source = new USBCameraCVSource(visionParams.sourceID);
+		}else if(visionParams.cameraSource.equalsIgnoreCase("ip")) {
+			source = new IPCameraSource(visionParams.sourceID);
+		}else {
+			source = new ImageSource(visionParams.sourceID);
 		}
+		
+		Mat frame = source.getImage();
+		
 		// Set up the GUI display windows
 		if (use_GUI) {
 			try {
@@ -524,9 +487,7 @@ public class Main {
 				// Initilizes the window to display the processed image
 				guiProcessedImg = new DisplayGui(matToBufferedImage(frame), "Processed Image",true);
 				// Initilizes the parameters selector
-				ParamsSelector selector = new ParamsSelector(true,true);
-				guiRawImg.addKeyListener(selector);
-				guiProcessedImg.addKeyListener(selector);
+				new ParamsSelector(true,true);
 			} catch (IOException e) {
 				// means mat2BufferedImage broke
 				// non-fatal error, let the program continue
@@ -535,27 +496,9 @@ public class Main {
 		ImageDumpScheduler.start();
 		// Main video processing loop
 		while (b) {
-			if (useCamera) {
-				// Read the frame from the camera, if it fails try again
-				if (!camera.read(frame)) {
-					System.err.println("Error: Failed to get a frame from the camera");
-					continue;
-				}
-			} // else use the image from disk that we loaded above
-			else{
-				// load the image from file.
-	            try {
-        	        frame = bufferedImageToMat(ImageIO.read(new File(visionParams.imageFile)));
-                } catch (IOException e) {
-                	e.printStackTrace();
-                    frame = new Mat();
-                }
-
-			}
-			if (use_GUI) {
-				// Resize the frame
-				Imgproc.resize(frame, frame, visionParams.sz);
-			}
+			
+			frame = source.getImage();
+			
 			// Process the frame!
 			// Log when the pipeline starts
 			long pipelineStart = System.nanoTime();
@@ -645,33 +588,5 @@ public class Main {
 
 	public static void showMiddle() {
 		showMiddle = true;
-	}
-
-	public static VisionData forceProcess() {
-		Mat frame = new Mat();
-		camera.read(frame);
-		Imgproc.resize(frame, frame, visionParams.sz);
-
-		VisionData visionData = Pipeline.process(frame, visionParams, false);
-
-		Pipeline.selectPreferredTarget(visionData, visionParams);
-
-		return visionData;
-	}
-
-	public static VisionData forceProcess(Mat frame) {
-		Imgproc.resize(frame, frame, visionParams.sz);
-
-		VisionData visionData = Pipeline.process(frame, visionParams, false);
-
-		Pipeline.selectPreferredTarget(visionData, visionParams);
-
-		return visionData;
-	}
-
-	public static Mat getFrame() {
-		Mat frame = new Mat();
-		camera.read(frame);
-		return frame;
 	}
 }
