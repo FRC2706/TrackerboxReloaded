@@ -44,6 +44,7 @@ public class Main {
 	public static boolean process = true;
 	public static boolean showMiddle = false;
 	public static boolean useCamera = true;
+	public static boolean use_GUI = true;
 	public static Mat frame;
 
 	public static void setFrame(Mat f) {
@@ -518,8 +519,6 @@ public class Main {
 		DisplayGui guiRawImg = null;
 		// The window to display the processed image
 		DisplayGui guiProcessedImg = null;
-		// Wether to open the guis
-		boolean use_GUI = true;
 		// If on Linux don't use guis
 		if (System.getProperty("os.name").toLowerCase().indexOf("raspbian") != -1) {
 			use_GUI = false;
@@ -570,14 +569,7 @@ public class Main {
 				// Resize the frame
 				Imgproc.resize(frame, frame, visionParams.sz);
 			}
-			// Process the frame!
-			// Log when the pipeline starts
-			long pipelineStart = System.nanoTime();
-			// Process the frame
-			VisionData visionData = Pipeline.process(frame, visionParams, use_GUI);
-			// Log when the pipeline stops
-			long pipelineEnd = System.nanoTime();
-			// Selects the prefered target
+						// Selects the prefered target
 			Pipeline.selectPreferredTarget(visionData, visionParams);
 			// Creates the raw output image object
 			Mat rawOutputImg;
