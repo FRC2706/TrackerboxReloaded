@@ -33,7 +33,7 @@ import org.opencv.videoio.Videoio;
 import edu.wpi.first.wpilibj.networktables.NetworkTable;
 
 public class Main {
-	
+
 	public static String filename = "";
 	public static ParamsSelector selector;
 	public static int timestamp = 0;
@@ -45,6 +45,7 @@ public class Main {
 	public static boolean showMiddle = false;
 	public static boolean useCamera = true;
 	public static boolean use_GUI = true;
+	public static DisplayGui guiRawImg, guiProcessedImg;
 	public static Mat frame;
 
 	public static void setFrame(Mat f) {
@@ -57,18 +58,17 @@ public class Main {
 	/** The vision parameters, this is used by the vision pipeline **/
 	public static VisionParams visionParams = new VisionParams();
 	/**
-	 * The vision NetworkTable, this is used to publish vision data to the
-	 * RoboRIO
+	 * The vision NetworkTable, this is used to publish vision data to the RoboRIO
 	 **/
 	public static NetworkTable visionTable;
 	/**
-	 * This is the number of seconds between dumping images to a usb stick, this
-	 * is taken from the vision parameters
+	 * This is the number of seconds between dumping images to a usb stick, this is
+	 * taken from the vision parameters
 	 **/
 	public static double seconds_between_img_dumps;
 	/**
-	 * This is the current number of seconds, this resets every time it is over
-	 * the seconds_between_img_dumps
+	 * This is the current number of seconds, this resets every time it is over the
+	 * seconds_between_img_dumps
 	 **/
 	public static double current_time_seconds;
 	/** The directory that images are dumped to **/
@@ -91,22 +91,21 @@ public class Main {
 		/** This is the maximum value that the pipeline will recognize **/
 		int maxValue;
 		/**
-		 * This is how many times the pipeline will erode dilate the camera
-		 * image
+		 * This is how many times the pipeline will erode dilate the camera image
 		 **/
 		int erodeDilateIterations;
 		/** This is the id of the camera that will be used to get images **/
 		int cameraSelect;
 		/**
-		 * The threshold to detect one large cube as 2 cubes, this is a value
-		 * between 0 and 1
+		 * The threshold to detect one large cube as 2 cubes, this is a value between 0
+		 * and 1
 		 **/
 		double aspectRatioThresh;
 		/** The minimum area that a target can have and still be recognized **/
 		double minArea;
 		/**
-		 * How important it is for a target to be close to the center of the
-		 * image, this will change depending on how well we can turn
+		 * How important it is for a target to be close to the center of the image, this
+		 * will change depending on how well we can turn
 		 **/
 		double distToCentreImportance;
 		/** The width to resize the image from the camera to **/
@@ -114,14 +113,14 @@ public class Main {
 		/** The height to resize the image from the camera to **/
 		int height;
 		/**
-		 * The size to resize the image from the camera to, this is just the
-		 * width and the height values
+		 * The size to resize the image from the camera to, this is just the width and
+		 * the height values
 		 **/
 		Size sz;
 		/** This is the image to be processed if the selected camera is -1 **/
 		String imageFile;
-		
-		double slope,yIntercept;
+
+		double slope, yIntercept;
 	}
 
 	/**
@@ -144,28 +143,28 @@ public class Main {
 			 **/
 			double yCentreNorm;
 			/**
-			 * A value between 0 and 1 representing the percentage of the image
-			 * the target takes up
+			 * A value between 0 and 1 representing the percentage of the image the target
+			 * takes up
 			 **/
 			double areaNorm; // [0,1] representing how much of the screen it
 								// occupies
 			/** The rectangle made from x and y centers **/
 			Rect boundingBox;
-			
+
 			double distance;
-			
+
 		}
 
 		/** The List of all the targets in the image **/
 		ArrayList<Target> targetsFound = new ArrayList<Target>();
 		/**
-		 * The target that is the most appealing, how it is chosen depends on
-		 * the distToCenterImportance value in the vision parameters
+		 * The target that is the most appealing, how it is chosen depends on the
+		 * distToCenterImportance value in the vision parameters
 		 **/
 		Target preferredTarget;
 		/** The image that contains the targets **/
 		public Mat outputImg = new Mat();
-		/** The frames per second **/
+		public Mat rawImage = new Mat();
 		public Mat binMask = new Mat();
 		public double fps;
 	}
@@ -180,11 +179,11 @@ public class Main {
 		// Sets the interval for updating NetworkTables
 		NetworkTable.setUpdateRate(0.02);
 		// Sets the team number
-		//NetworkTable.setTeam(2706); // Use this for the robit
+		// NetworkTable.setTeam(2706); // Use this for the robit
 		// Enables DSClient
 		NetworkTable.setDSClientEnabled(true); // and this for the robit
 		// Sets the IP adress to connect to
-		NetworkTable.setIPAddress("localhost"); //Use this for testing
+		NetworkTable.setIPAddress("localhost"); // Use this for testing
 		// Initilizes NetworkTables
 		NetworkTable.initialize();
 		// Sets the vision table to the "vision" table that is in NetworkTables
@@ -252,9 +251,9 @@ public class Main {
 			// if the file, take the timestamp from there
 			if (timestampfile.exists()) {
 				Scanner s = new Scanner(timestampfile);
-				try{
+				try {
 					timestamp = Integer.valueOf(s.nextLine()).intValue();
-				}catch(Exception e){
+				} catch (Exception e) {
 					e.printStackTrace();
 				}
 				timestamp++;
@@ -284,10 +283,8 @@ public class Main {
 				throw new IllegalArgumentException("Error: " + properties.getProperty("resolution")
 						+ " is not a supported resolution.\n" + "Allowed: 80x60, 160x120, 320x240, 640x480.");
 			}
-			
-			visionParams.slope = Double.valueOf(properties.getProperty("slope"));
-			visionParams.yIntercept = Double.valueOf(properties.getProperty("yIntercept"));
-			
+
+
 		} catch (Exception e1) {
 			e1.printStackTrace();
 			System.err.println("\n\nError reading the params file, check if the file is corrupt?");
@@ -346,11 +343,11 @@ public class Main {
 			// Sets the image dumping path property in the file to the image
 			// dumping path value
 			properties.setProperty("imgDumpPath", outputPath);
-			
+
 			properties.setProperty("slope", String.valueOf(visionParams.slope));
-			
+
 			properties.setProperty("yIntercept", String.valueOf(visionParams.yIntercept));
-			
+
 			// Initilizes the output stream to the vision parameters file
 			FileOutputStream out = new FileOutputStream("visionParams.properties");
 			// Dumps the properties to the output stream
@@ -362,8 +359,8 @@ public class Main {
 	}
 
 	/**
-	 * Turns all the vision data into packets that kno da wae to get to the robo
-	 * rio :]
+	 * Turns all the vision data into packets that kno da wae to get to the robo rio
+	 * :]
 	 *
 	 * @param visionData
 	 */
@@ -387,8 +384,7 @@ public class Main {
 	/**
 	 * Converts a OpenCV Matrix to a BufferedImage :)
 	 *
-	 * @param matrix
-	 *            Matrix to be converted
+	 * @param matrix Matrix to be converted
 	 * @return Generated from the matrix
 	 * @throws IOException
 	 * @throws Exception
@@ -405,8 +401,7 @@ public class Main {
 	/**
 	 * Converts a Buffered Image to a OpenCV Matrix
 	 * 
-	 * @param Buffered
-	 *            Image to convert to matrix
+	 * @param Buffered Image to convert to matrix
 	 * @return The matrix from the buffered image
 	 */
 
@@ -419,12 +414,9 @@ public class Main {
 
 	/**
 	 * 
-	 * @param The
-	 *            image to dump to a file
-	 * @param image
-	 *            the image to be dumped
-	 * @param suffix
-	 *            the suffix to put on the file name
+	 * @param The    image to dump to a file
+	 * @param image  the image to be dumped
+	 * @param suffix the suffix to put on the file name
 	 * @throws IOException
 	 */
 
@@ -442,17 +434,14 @@ public class Main {
 		PrintWriter out = new PrintWriter(timestampfile);
 		out.println(timestamp);
 		out.close();
-		
+
 	}
 
-	public static boolean b = true;
-	
 	/**
 	 * The main method! Very important Do not delete! :] :]
 	 *
 	 * 
-	 * @param The
-	 *            command line arguments
+	 * @param The command line arguments
 	 */
 	public static void main(String[] args) {
 		// Must be included!
@@ -515,10 +504,6 @@ public class Main {
 				frame = new Mat();
 			}
 		}
-		// The window to display the raw image
-		DisplayGui guiRawImg = null;
-		// The window to display the processed image
-		DisplayGui guiProcessedImg = null;
 		// If on Linux don't use guis
 		if (System.getProperty("os.name").toLowerCase().indexOf("raspbian") != -1) {
 			use_GUI = false;
@@ -533,11 +518,11 @@ public class Main {
 		if (use_GUI) {
 			try {
 				// Initilizes the window to display the raw image
-				guiRawImg = new DisplayGui(matToBufferedImage(frame), "Raw Camera Image",true);
+				guiRawImg = new DisplayGui(matToBufferedImage(frame), "Raw Camera Image", true);
 				// Initilizes the window to display the processed image
-				guiProcessedImg = new DisplayGui(matToBufferedImage(frame), "Processed Image",true);
+				guiProcessedImg = new DisplayGui(matToBufferedImage(frame), "Processed Image", true);
 				// Initilizes the parameters selector
-				ParamsSelector selector = new ParamsSelector(true,true);
+				ParamsSelector selector = new ParamsSelector(true, true);
 				guiRawImg.addKeyListener(selector);
 				guiProcessedImg.addKeyListener(selector);
 			} catch (IOException e) {
@@ -546,8 +531,9 @@ public class Main {
 			}
 		}
 		ImageDumpScheduler.start();
+		ProcessingThreadPool.start();
 		// Main video processing loop
-		while (b) {
+		while (true) {
 			if (useCamera) {
 				// Read the frame from the camera, if it fails try again
 				if (!camera.read(frame)) {
@@ -555,25 +541,36 @@ public class Main {
 					continue;
 				}
 			} // else use the image from disk that we loaded above
-			else{
+			else {
 				// load the image from file.
-	            try {
-        	        frame = bufferedImageToMat(ImageIO.read(new File(visionParams.imageFile)));
-                } catch (IOException e) {
-                	e.printStackTrace();
-                    frame = new Mat();
-                }
+				try {
+					frame = bufferedImageToMat(ImageIO.read(new File(visionParams.imageFile)));
+				} catch (IOException e) {
+					e.printStackTrace();
+					frame = new Mat();
+				}
 
 			}
+			
+			long pipelineStart = System.nanoTime();
+			
 			if (use_GUI) {
 				// Resize the frame
 				Imgproc.resize(frame, frame, visionParams.sz);
 			}
-						// Selects the prefered target
-			Pipeline.selectPreferredTarget(visionData, visionParams);
+			
+			long pipelineStart1 = System.nanoTime();
+			VisionData visionData = ProcessingThreadPool.process(frame);
+			long pipelineEnd1 = System.nanoTime();
+			
+			if(visionData == null) {
+				System.out.println("Dropped frame!");
+				continue;
+			}
+			
 			// Creates the raw output image object
 			Mat rawOutputImg;
-			if (use_GUI) {
+			if (Main.use_GUI) {
 				// If use gui then draw the prefered target
 				// Sets the raw image to the frame
 				rawOutputImg = frame.clone();
@@ -583,24 +580,25 @@ public class Main {
 				// Sets the raw image to the frame
 				rawOutputImg = frame;
 			}
+
 			// Sends the data to the vision table
-			sendVisionDataOverNetworkTables(visionData);
-			lastData = visionData;
+			Main.sendVisionDataOverNetworkTables(visionData);
+			Main.lastData = visionData;
 			// display the processed frame in the GUI
-			if (use_GUI) {
+			if (Main.use_GUI) {
 				try {
 					// May throw a NullPointerException if initializing
 					// the window failed
-					BufferedImage raw = matToBufferedImage(rawOutputImg);
-					currentImage = raw;
-					if (showMiddle) {
+					BufferedImage raw = Main.matToBufferedImage(rawOutputImg);
+					Main.currentImage = raw;
+					if (Main.showMiddle) {
 						Graphics g = raw.getGraphics();
 						g.setColor(Color.RED);
 						g.fillOval(raw.getWidth() / 2 - 8, raw.getHeight() / 2 - 8, 8, 8);
 						g.dispose();
 					}
-					guiRawImg.updateImage(raw);
-					guiProcessedImg.updateImage(matToBufferedImage(visionData.binMask));
+					Main.guiRawImg.updateImage(raw);
+					Main.guiProcessedImg.updateImage(Main.matToBufferedImage(visionData.binMask));
 				} catch (IOException e) {
 					// means mat2BufferedImage broke
 					// non-fatal error, let the program continue
@@ -615,33 +613,39 @@ public class Main {
 					continue;
 				}
 			}
-			if (useCamera) {
+			if (Main.useCamera) {
 				// log images to file once every seconds_between_img_dumps
-				double elapsedTime = ((double) System.currentTimeMillis() / 1000) - current_time_seconds;
+				double elapsedTime = ((double) System.currentTimeMillis() / 1000) - Main.current_time_seconds;
 				// If the elapsed time is more that the seconds between image
 				// dumps
 				// then dump images asynchronously
-				if (elapsedTime >= seconds_between_img_dumps) {
+				if (elapsedTime >= Main.seconds_between_img_dumps) {
 					// Sets the current number of seconds
-					current_time_seconds = (((double) System.currentTimeMillis()) / 1000);
+					Main.current_time_seconds = (((double) System.currentTimeMillis()) / 1000);
 					// Clones the frame
 					Mat finalFrame = frame.clone();
 					try {
 						Mat draw = finalFrame.clone();
 						Pipeline.drawPreferredTarget(draw, visionData);
-						Bundle b = new Bundle(matToBufferedImage(finalFrame), matToBufferedImage(visionData.binMask),
-								matToBufferedImage(draw), timestamp);
+						Bundle b = new Bundle(Main.matToBufferedImage(finalFrame),
+								Main.matToBufferedImage(visionData.binMask), Main.matToBufferedImage(draw),
+								Main.timestamp);
 						ImageDumpScheduler.schedule(b);
-						timestamp++;
+						Main.timestamp++;
 					} catch (IOException e) {
 						e.printStackTrace();
-						return;
+						continue;
 					}
 				}
 			}
+
+			long pipelineEnd = System.nanoTime();
+			
 			// Display the frame rate onto the console
 			double pipelineTime = (((double) (pipelineEnd - pipelineStart)) / Pipeline.NANOSECONDS_PER_SECOND) * 1000;
-			System.out.printf("Vision FPS: %3.2f, pipeline took: %3.2f ms\n", visionData.fps, pipelineTime);
+			
+			System.out.printf("Vision FPS: %3.2f, pipeline took: %3.2f ms, actual fps is %3.2f\n", visionData.fps, pipelineTime,(double)(1000)/(pipelineStart1-pipelineEnd1));
+
 		}
 	} // end main video processing loop
 

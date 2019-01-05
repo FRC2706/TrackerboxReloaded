@@ -12,6 +12,7 @@ public class Processor extends Thread {
 	private List<MatPackage> processQueue = new ArrayList<MatPackage>();
 
 	private boolean running = true;
+	public boolean finish = false;
 
 	private long threadId;
 
@@ -21,15 +22,14 @@ public class Processor extends Thread {
 
 	@Override
 	public void run() {
-
+		
 		while (running) {
-
+			
 			if (processQueue.size() > 0) {
-
+				
 				MatPackage mP = processQueue.get(0);
 
 				Mat frame = mP.getFrame();
-
 				// Process the frame!
 				// Log when the pipeline starts
 				long pipelineStart = System.nanoTime();
@@ -39,9 +39,18 @@ public class Processor extends Thread {
 				long pipelineEnd = System.nanoTime();
 
 				DataPackage data = new DataPackage(visionData, pipelineEnd - pipelineStart, mP.getId(), threadId);
-
+				while(ProcessingThreadPool.stop) {
+					try {
+						Thread.sleep(1);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
 				ProcessingThreadPool.put(data);
-
+			}else {
+				if(finish) {
+					running = false;
+				}
 			}
 
 			try {

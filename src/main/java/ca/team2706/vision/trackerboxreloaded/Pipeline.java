@@ -23,43 +23,52 @@ public class Pipeline {
      * @param visionParams Parameters for visionTable
      * @return All the data!
      */
-	@SuppressWarnings("unused")
 	public static VisionData process(Mat src, VisionParams visionParams, boolean use_GUI) {
 
 		// As a memory footprint optimization, when running on a Pi, re-use one working image in memory
-		Mat dilated, erodeOne, erodeTwo, workingImg;
+		Mat dilated, erodeOne;
 		//If using the guis
 		if (use_GUI) {
 			//Make new Mats
 			dilated = new Mat();
 			erodeOne = new Mat();
-			erodeTwo = new Mat();
 		} else {
 			//Else re use them
 			dilated = new Mat();
 			erodeOne = dilated;
-			erodeTwo = dilated;
 		}
-		//Calculate the image area
-		int imgArea = src.height() * src.width();
-
 		// If there's any data or intermediate images that you want to return, add them to the VisionData class
 		// For example, any numbers that we want to return to the roboRIO.
 		VisionData visionData = new VisionData();
 
+		visionData.rawImage = src;
 
 		// Colour threshold
 		Mat hsvThreshold = new Mat();
 		Core.inRange(src, new Scalar(visionParams.minHue, visionParams.minSaturation, visionParams.minValue),
 				new Scalar(visionParams.maxHue, visionParams.maxSaturation, visionParams.maxValue), hsvThreshold);
 
-		// Erode - Dilate*2 - Erode
+		// Erode - Dilate
 		Imgproc.erode(hsvThreshold, erodeOne, new Mat(), new Point(), visionParams.erodeDilateIterations, Core.BORDER_CONSTANT, new Scalar(0));
-		Imgproc.dilate(erodeOne, dilated, new Mat(), new Point(), 2*visionParams.erodeDilateIterations, Core.BORDER_CONSTANT, new Scalar(0));
-	    Imgproc.erode(dilated, erodeTwo, new Mat(), new Point(), visionParams.erodeDilateIterations, Core.BORDER_CONSTANT, new Scalar(0));
+		Imgproc.dilate(erodeOne, dilated, new Mat(), new Point(), visionParams.erodeDilateIterations, Core.BORDER_CONSTANT, new Scalar(0));
+		visionData.binMask = dilated.clone();
+		
+		long now = System.nanoTime();
+		visionData.fps = ((double) NANOSECONDS_PER_SECOND) / (now - fpsTimer);
+		visionData.fps = ((int)(visionData.fps*10))/10.0; // round to 1 decimal place
+		fpsTimer = now;
 
-		visionData.binMask = erodeTwo.clone();
+		return visionData;
+	}
+	
+	public static void contours(VisionData visionData, VisionParams visionParams) {
 
+		Mat dilated = visionData.binMask;
+		Mat src = visionData.rawImage;
+		
+		//Calculate the image area
+		int imgArea = src.height() * src.width();
+		
 		//Find contours
 		List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
 		Imgproc.findContours(dilated, contours, new Mat(), Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
@@ -80,8 +89,6 @@ public class Pipeline {
 				 * if the x length of the rectangle is 2 times the Y length then it is safe to say there are 2 cubes
 				 * this code also gives a 25% range for error (still detect if X length is 2.25 / 1.75 times the Y length)
 				 */
-				int target1CtrX, target1CtrY, target2CtrX, target2CtrY;
-				double target1AreaNorm, target2AreaNorm;
                 if ((boundingRect.width <= (2 + visionParams.aspectRatioThresh) * boundingRect.height) && (boundingRect.width >= (2 - visionParams.aspectRatioThresh) * boundingRect.height)) {
 
 					// Detect 2 targets rather than 1 big bounding box
@@ -123,13 +130,7 @@ public class Pipeline {
             // else
 			// skip this contour because it's too small
 		}
-		
-		long now = System.nanoTime();
-		visionData.fps = ((double) NANOSECONDS_PER_SECOND) / (now - fpsTimer);
-		visionData.fps = ((int)(visionData.fps*10))/10.0; // round to 1 decimal place
-		fpsTimer = now;
 
-		return visionData;
 	}
 
 
