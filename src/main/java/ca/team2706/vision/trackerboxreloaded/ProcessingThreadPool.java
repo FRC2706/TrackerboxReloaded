@@ -1,6 +1,7 @@
 package ca.team2706.vision.trackerboxreloaded;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,11 +51,12 @@ public class ProcessingThreadPool implements Runnable {
 			}
 
 			Map<Integer, Mat> mats = split(frame, size);
-
+			
 			for (int i = 0; i < mats.keySet().size(); i++) {
 
 				Processor p = threads.get(i);
 
+				
 				Mat m = mats.get(i);
 
 				MatPackage mP = new MatPackage(counter, m);
@@ -64,7 +66,7 @@ public class ProcessingThreadPool implements Runnable {
 			}
 
 			List<DataPackage> results = new ArrayList<DataPackage>();
-
+			
 			while (results.size() < size) {
 
 				synchronized (datas) {
@@ -142,32 +144,33 @@ public class ProcessingThreadPool implements Runnable {
 
 	private static List<DataPackage> sort(List<DataPackage> data) {
 
-		List<DataPackage> sorted = new ArrayList<DataPackage>();
+		List<DataPackage> sorted = new ArrayList<>(data);
+		
+		Collections.sort(sorted);
 
-		int i = 0;
-
-		while(sorted.size() < data.size()) {
-
-			boolean stop = false;
-
-			for (DataPackage p : data) {
-
-				if (!stop) {
-					
-					if (p.getThreadId() == i) {
-						sorted.add(p);
-						System.out.println(p.getThreadId()+" "+i);
-						i++;
-						stop = true;
-						if(sorted.size() >= data.size()) {
-							break;
-						}
-					}
-
-				}
-
-			}
-		}
+//		int i = 0;
+//
+//		while(sorted.size() < data.size()) {
+//
+//			boolean stop = false;
+//
+//			for (DataPackage p : data) {
+//
+//				if (!stop) {
+//					
+//					if (p.getThreadId() == i) {
+//						sorted.add(p);
+//						i++;
+//						stop = true;
+//						if(sorted.size() >= data.size()) {
+//							break;
+//						}
+//					}
+//
+//				}
+//
+//			}
+//		}
 
 		return sorted;
 
@@ -220,7 +223,7 @@ public class ProcessingThreadPool implements Runnable {
 		 */
 
 		// That code is broken so just use 4 threads
-		for (int i = 0; i < 4; i++) {
+		for (int i = 0; i < 8; i++) {
 			Processor p = new Processor(i);
 
 			p.start();

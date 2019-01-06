@@ -2,7 +2,7 @@ package ca.team2706.vision.trackerboxreloaded;
 
 import ca.team2706.vision.trackerboxreloaded.Main.VisionData;
 
-public class DataPackage {
+public class DataPackage implements Comparable<DataPackage>  {
 
 	private long time;
 	private VisionData data;
@@ -32,6 +32,11 @@ public class DataPackage {
 
 	public long getThreadId() {
 		return threadId;
+	}
+
+	@Override
+	public int compareTo(DataPackage other) {
+		return Long.compare(threadId, other.threadId);
 	}
 
 	
