@@ -1,3 +1,3 @@
 
 #!/bin/bash
-./gradlew build -PbuildType=arm-raspian -PtestType=raspbian
+./gradlew build -PbuildType=arm-raspian -PtestType=arm-raspbian
